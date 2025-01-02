@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #da6f17;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .container h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            padding: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .button {
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .editable {
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px;
+        }
+        .highlight {
+            background-color: #d4edda;
+        }
+        .delete-button {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .delete-button:hover {
+            background: #ff3333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grocery Calculator</h1>
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" id="date">
+        </div>
+        <div class="form-group">
+            <label for="store">Store:</label>
+            <input type="text" id="store" placeholder="Enter store name">
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount Spent:</label>
+            <input type="number" id="amount" placeholder="Enter amount">
+        </div>
+        <div class="form-group">
+            <label for="paidBy">Paid By:</label>
+            <select id="paidBy">
+                <option value="Akosah">Akosah</option>
+                <option value="Benjamin">Benjamin</option>
+                <option value="Jacob">Jacob</option>
+                <option value="Prince">Prince</option>
+            </select>
+        </div>
+        <button class="button" onclick="addExpense()">Add Expense</button>
+        
+        <div class="output" id="output">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Store</th>
+                        <th>Amount Spent</th>
+                        <th>Paid By</th>
+                        <th>Bill Per Person</th>
+                        <th>Akosah</th>
+                        <th>Benjamin</th>
+                        <th>Jacob</th>
+                        <th>Prince</th>
+                        <th>Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Load expenses from localStorage if available
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+        // Save the expenses to localStorage
+        function saveExpenses() {
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+
+        function addExpense() {
+            const date = document.getElementById('date').value;
+            const store = document.getElementById('store').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const paidBy = document.getElementById('paidBy').value;
+
+            if (!date || !store || isNaN(amount) || amount <= 0) {
+                alert('Please enter valid details');
+                return;
+            }
+
+            expenses.push({ date, store, amount, paidBy });
+            document.getElementById('date').value = '';
+            document.getElementById('store').value = '';
+            document.getElementById('amount').value = '';
+
+            saveExpenses();
+            updateTable();
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('expenseTable');
+            tableBody.innerHTML = '';
+
+            const totalBalances = { Akosah: 0, Benjamin: 0, Jacob: 0, Prince: 0 };
+
+            expenses.forEach((expense, index) => {
+                const row = document.createElement('tr');
+
+                const perPersonShare = expense.amount / 4;
+                totalBalances[expense.paidBy] += expense.amount - perPersonShare;
+
+                row.innerHTML = `
+                    <td contenteditable="true" onblur="updateCell(${index}, 'date', this.innerText)">${expense.date}</td>
+                    <td contenteditable="true" onblur="updateCell(${index}, 'store', this.innerText)">${expense.store}</td>
+                    <td contenteditable="true" onblur="updateCell(${index}, 'amount', parseFloat(this.innerText) || expense.amount)">${expense.amount.toFixed(2)}</td>
+                    <td>${expense.paidBy}</td>
+                    <td>${perPersonShare.toFixed(2)}</td>
+                    <td class="${expense.paidBy === 'Akosah' ? 'highlight' : ''}" contenteditable="true" onblur="updateCell(${index}, 'Akosah', parseFloat(this.innerText) || totalBalances.Akosah)">${expense.paidBy === 'Akosah' ? expense.amount.toFixed(2) : totalBalances.Akosah.toFixed(2)}</td>
+                    <td class="${expense.paidBy === 'Benjamin' ? 'highlight' : ''}" contenteditable="true" onblur="updateCell(${index}, 'Benjamin', parseFloat(this.innerText) || totalBalances.Benjamin)">${expense.paidBy === 'Benjamin' ? expense.amount.toFixed(2) : totalBalances.Benjamin.toFixed(2)}</td>
+                    <td class="${expense.paidBy === 'Jacob' ? 'highlight' : ''}" contenteditable="true" onblur="updateCell(${index}, 'Jacob', parseFloat(this.innerText) || totalBalances.Jacob)">${expense.paidBy === 'Jacob' ? expense.amount.toFixed(2) : totalBalances.Jacob.toFixed(2)}</td>
+                    <td class="${expense.paidBy === 'Prince' ? 'highlight' : ''}" contenteditable="true" onblur="updateCell(${index}, 'Prince', parseFloat(this.innerText) || totalBalances.Prince)">${expense.paidBy === 'Prince' ? expense.amount.toFixed(2) : totalBalances.Prince.toFixed(2)}</td>
+                    <td contenteditable="true" onblur="updateCell(${index}, 'balance', parseFloat(this.innerText) || 0)">${(totalBalances.Akosah + totalBalances.Benjamin + totalBalances.Jacob + totalBalances.Prince).toFixed(2)}</td>
+                    <td>
+                        <button class="update-button" onclick="updateExpense(${index})">Update</button>
+                        <button class="delete-button" onclick="deleteExpense(${index})">Delete</button>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function updateCell(index, field, value) {
+            if (field === 'amount' || field === 'balance' || field === 'Akosah' || field === 'Benjamin' || field === 'Jacob' || field === 'Prince') {
+                value = parseFloat(value);
+                if (isNaN(value)) {
+                    alert('Invalid number');
+                    updateTable();
+                    return;
+                }
+            }
+
+            expenses[index][field] = value;
+            saveExpenses();
+        }
+
+        function updateExpense(index) {
+            const row = document.getElementById('expenseTable').children[index];
+            const date = row.cells[0].innerText;
+            const store = row.cells[1].innerText;
+            const amount = parseFloat(row.cells[2].innerText);
+            const paidBy = expenses[index].paidBy;  // Retain the person who paid
+            const updatedExpense = { date, store, amount, paidBy };
+            
+            if (!date || !store || isNaN(amount) || amount <= 0) {
+                alert('Please enter valid details for update');
+                return;
+            }
+
+            expenses[index] = updatedExpense;
+            saveExpenses();
+            updateTable();
+        }
+
+        function deleteExpense(index) {
+            expenses.splice(index, 1);
+            saveExpenses();
+            updateTable();
+        }
+
+        // Initial table load
+        updateTable();
+    </script>
+</body>
+</html>
